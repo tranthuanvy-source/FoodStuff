@@ -90,7 +90,7 @@ const availableRecipesCount = computed(() => {
 <style scoped>
 .home {
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 200px;
   margin: 0 auto;
 }
 
