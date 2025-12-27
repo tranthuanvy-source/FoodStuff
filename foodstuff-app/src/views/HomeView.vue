@@ -16,7 +16,7 @@ const availableRecipesCount = computed(() => {
 <template>
   <main class="home">
     <div class="hero">
-      <h1>🍽️ FoodStuff</h1>
+      <h1>Inventory Tracker</h1>
       <p class="tagline">Your household pantry inventory tracking system</p>
     </div>
 
@@ -102,7 +102,7 @@ const availableRecipesCount = computed(() => {
 .hero h1 {
   font-size: 3rem;
   margin: 0 0 0.5rem 0;
-  color: #333;
+  color: #000000ff;
 }
 
 .tagline {

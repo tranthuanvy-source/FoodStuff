@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Recipe } from '@/types'
 import { useInventoryStore } from './inventory'
+import { useShoppingStore } from './shopping'
 
 export const useRecipeStore = defineStore('recipes', () => {
   const recipes = ref<Recipe[]>([
@@ -100,11 +101,78 @@ export const useRecipeStore = defineStore('recipes', () => {
     recipes.value.push(newRecipe)
   }
 
+  function addRecipeToShoppingList(recipeId: string) {
+    const recipe = recipes.value.find(r => r.id === recipeId)
+    if (!recipe) {
+      throw new Error('Recipe not found')
+    }
+
+    const inventoryStore = useInventoryStore()
+    const shoppingStore = useShoppingStore()
+    const missingItems: Array<{ name: string; quantity: number; unit: string; category: string }> = []
+
+    // Check each ingredient in the recipe
+    recipe.ingredients.forEach(ingredient => {
+      // Skip optional ingredients
+      if (ingredient.optional) return
+
+      // Find the ingredient in inventory
+      const inventoryItem = inventoryStore.items.find(
+        item => item.name.toLowerCase() === ingredient.name.toLowerCase()
+      )
+
+      if (!inventoryItem) {
+        // Item not in inventory at all - need full quantity
+        missingItems.push({
+          name: ingredient.name,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit,
+          category: 'Other' // Default category, could be improved
+        })
+      } else if (inventoryItem.quantity < ingredient.quantity) {
+        // Item exists but insufficient quantity
+        const neededQuantity = ingredient.quantity - inventoryItem.quantity
+        missingItems.push({
+          name: ingredient.name,
+          quantity: neededQuantity,
+          unit: ingredient.unit,
+          category: inventoryItem.category
+        })
+      }
+    })
+
+    // Add missing items to shopping list
+    // Check if item already exists in shopping list to avoid duplicates
+    missingItems.forEach(item => {
+      const existingItem = shoppingStore.items.find(
+        shoppingItem => shoppingItem.name.toLowerCase() === item.name.toLowerCase()
+      )
+
+      if (existingItem) {
+        // Update quantity if item already in shopping list
+        existingItem.quantity += item.quantity
+      } else {
+        // Add new item to shopping list
+        shoppingStore.addItem({
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category,
+          checked: false,
+          notes: `For ${recipe.name}`
+        })
+      }
+    })
+
+    return missingItems.length
+  }
+
   return {
     recipes,
     availableRecipes,
     favoriteRecipes,
     toggleFavorite,
-    addRecipe
+    addRecipe,
+    addRecipeToShoppingList
   }
 })

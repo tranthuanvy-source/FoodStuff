@@ -62,7 +62,17 @@
           </ul>
         </div>
 
-        <button @click="selectedRecipe = recipe" class="btn-primary">View Recipe</button>
+        <div class="card-actions">
+          <button @click="selectedRecipe = recipe" class="btn-primary">View Recipe</button>
+          <button 
+            v-if="!recipe.canMake" 
+            @click="quickAddToShoppingList(recipe.id)" 
+            class="btn-secondary"
+            title="Add missing ingredients to shopping list"
+          >
+            🛒 Add to List
+          </button>
+        </div>
       </div>
     </div>
 
@@ -146,31 +156,32 @@ function isIngredientAvailable(ingredient: RecipeIngredient): boolean {
 function addIngredientsToShoppingList() {
   if (!selectedRecipe.value) return
 
-  let addedCount = 0
-  selectedRecipe.value.ingredients.forEach(ingredient => {
-    if (!isIngredientAvailable(ingredient) && !ingredient.optional) {
-      // Check if already in shopping list
-      const existing = shoppingStore.items.find(
-        item => item.name.toLowerCase() === ingredient.name.toLowerCase()
-      )
-      
-      if (!existing) {
-        shoppingStore.addItem({
-          name: ingredient.name,
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
-          category: 'Other',
-          checked: false
-        })
-        addedCount++
-      }
+  try {
+    const addedCount = recipeStore.addRecipeToShoppingList(selectedRecipe.value.id)
+    
+    if (addedCount > 0) {
+      alert(`Added ${addedCount} missing ingredient(s) to your shopping list!`)
+    } else {
+      alert('You have all the ingredients needed for this recipe!')
     }
-  })
+  } catch (error) {
+    alert('Error adding ingredients to shopping list')
+    console.error(error)
+  }
+}
 
-  if (addedCount > 0) {
-    alert(`Added ${addedCount} ingredient(s) to your shopping list!`)
-  } else {
-    alert('All ingredients are already available or in your shopping list.')
+function quickAddToShoppingList(recipeId: string) {
+  try {
+    const addedCount = recipeStore.addRecipeToShoppingList(recipeId)
+    
+    if (addedCount > 0) {
+      alert(`✓ Added ${addedCount} missing ingredient(s) to your shopping list!`)
+    } else {
+      alert('You have all the ingredients needed for this recipe!')
+    }
+  } catch (error) {
+    alert('Error adding ingredients to shopping list')
+    console.error(error)
   }
 }
 
@@ -325,8 +336,14 @@ const store = recipeStore
   color: #6c757d;
 }
 
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .btn-primary {
-  width: 100%;
+  flex: 1;
   padding: 0.75rem;
   background: #007bff;
   color: white;
@@ -338,6 +355,22 @@ const store = recipeStore
 }
 
 .btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  padding: 0.75rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
   opacity: 0.9;
 }
 
